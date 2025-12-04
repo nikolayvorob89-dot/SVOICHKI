@@ -1,40 +1,41 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Мессенджер в сети</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center; }
-        #messages { list-style-type: none; padding: 0; height: 300px; overflow-y: scroll; border: 1px solid #ccc; margin-bottom: 10px; }
-        #messages li { padding: 5px; border-bottom: 1px solid #eee; }
-    </style>
+    <title>Messenger</title>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
 </head>
 <body>
-    <h2>Мессенджер в сети</h2>
-    <ul id="messages"></ul>
-    <input id="msg" autocomplete="off" placeholder="Введите сообщение" />
+    <h1>Чат</h1>
+    <div id="messages"></div>
+    <input id="messageInput" type="text" placeholder="Введите сообщение">
     <button onclick="sendMessage()">Отправить</button>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
     <script>
         const socket = io();
 
-        socket.on('message', function(msg){
-            const li = document.createElement('li');
-            li.textContent = msg;
-            document.getElementById('messages').appendChild(li);
-        });
+        function addMessage(text) {
+            const messagesDiv = document.getElementById('messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.textContent = text;
+            messagesDiv.appendChild(msgDiv);
+        }
 
         function sendMessage() {
-            const input = document.getElementById('msg');
-            if(input.value.trim() !== ''){
-                socket.send(input.value);
-                const li = document.createElement('li');
-                li.textContent = 'Вы: ' + input.value;
-                document.getElementById('messages').appendChild(li);
-                input.value = '';
-            }
+            const input = document.getElementById('messageInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            // показываем у себя
+            addMessage("Вы: " + msg);
+            // отправляем на сервер
+            socket.send(msg);
+            input.value = '';
         }
+
+        // сообщения от других пользователей
+        socket.on('message', function(msg) {
+            addMessage(msg);
+        });
     </script>
 </body>
 </html>
