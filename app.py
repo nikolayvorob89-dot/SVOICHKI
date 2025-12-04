@@ -1,8 +1,9 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO, send
 import eventlet
+import os
 
-eventlet.monkey_patch()  # важно для WebSocket на облаке
+eventlet.monkey_patch()  # обязательно для WebSocket
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -17,4 +18,5 @@ def handle_message(msg):
     send(msg, broadcast=True)
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))  # берем порт от Render
+    socketio.run(app, host='0.0.0.0', port=port)
