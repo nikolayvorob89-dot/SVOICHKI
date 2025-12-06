@@ -1,16 +1,22 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>Вход</title>
+    <title>Логин</title>
 </head>
 <body>
-    <h2>Вход</h2>
-    <form method="POST">
-        <input type="text" name="username" placeholder="Логин" required><br><br>
-        <input type="password" name="password" placeholder="Пароль" required><br><br>
-        <button type="submit">Войти</button>
-    </form>
-    <p>Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
+
+<h2>Вход</h2>
+<form method="POST">
+    <input name="username" placeholder="Имя"><br>
+    <input name="password" type="password" placeholder="Пароль"><br>
+    <button type="submit">Войти</button>
+</form>
+
+{% if error %}
+<p style="color:red">{{ error }}</p>
+{% endif %}
+
+<p>Нет аккаунта? <a href="{{ url_for('register') }}">Регистрация</a></p>
 </body>
 </html>

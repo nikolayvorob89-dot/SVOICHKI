@@ -1,27 +1,20 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <title>Пользователи</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
 
-<div class="sidebar">
-    <h3>{{ session['username'] }}</h3>
-    <a href="/logout">Выйти</a>
-</div>
+<h2>Выберите пользователя</h2>
 
-<div class="chat-window">
-    <h2>Пользователи</h2>
-    <ul>
-        {% for user in users %}
-        <li>
-            <a href="{{ url_for('chat', username=user) }}">{{ user }}</a>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
+<ul>
+    {% for u in users %}
+        <li><a href="{{ url_for('chat', username=u) }}">{{ u }}</a></li>
+    {% endfor %}
+</ul>
+
+<p><a href="{{ url_for('logout') }}">Выйти</a></p>
 
 </body>
 </html>
