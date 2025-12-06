@@ -1,11 +1,13 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
+from flask_socketio import SocketIO, emit, join_room
 import sqlite3
 import os
 
 app = Flask(__name__)
 app.secret_key = 'secret_key_for_session'
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-# --- DATABASE SETUP ---
+# ---- DATABASE ----
 def init_db():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
@@ -29,12 +31,12 @@ def init_db():
 
 init_db()
 
-# --- DEFAULT ROUTE — открываем /login ---
+# ---- DEFAULT ROUTE ----
 @app.route('/')
 def index():
     return redirect('/login')
 
-# --- ROUTES ---
+# ---- AUTH ----
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -64,8 +66,7 @@ def login():
         if user:
             session['username'] = username
             return redirect('/users')
-        else:
-            return "Неверный логин или пароль"
+        return "Неверный логин или пароль"
     return render_template('login.html')
 
 @app.route('/logout')
@@ -73,6 +74,7 @@ def logout():
     session.pop('username', None)
     return redirect('/login')
 
+# ---- USERS ----
 @app.route('/users')
 def users():
     if 'username' not in session:
@@ -84,28 +86,22 @@ def users():
     conn.close()
     return render_template('users.html', users=users_list)
 
-@app.route('/chat/<username>', methods=['GET', 'POST'])
-def chat_with(username):
+# ---- CHAT PAGE ----
+@app.route('/chat/<username>')
+def chat(username):
     if 'username' not in session:
         return redirect('/login')
     if username == session['username']:
         return redirect('/users')
 
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    if request.method == 'POST':
-        message = request.form['message']
-        if message.strip() != '':
-            c.execute('INSERT INTO messages (sender, receiver, message) VALUES (?, ?, ?)',
-                      (session['username'], username, message))
-            conn.commit()
-    conn.close()
     return render_template('chat.html', username=session['username'], chat_with=username)
 
+# FETCH HISTORY
 @app.route('/messages/<username>')
 def get_messages(username):
     if 'username' not in session:
         return jsonify([])
+
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     c.execute('''
@@ -113,12 +109,46 @@ def get_messages(username):
         WHERE (sender=? AND receiver=?) OR (sender=? AND receiver=?)
         ORDER BY id
     ''', (session['username'], username, username, session['username']))
-    messages = c.fetchall()
+    rows = c.fetchall()
     conn.close()
-    messages_formatted = [f"{sender} : {message}" for sender, message in messages]
-    return jsonify(messages_formatted)
 
-# --- RUN SERVER (работает и локально, и на Render) ---
+    formatted = [f"{s} : {m}" for s, m in rows]
+    return jsonify(formatted)
+
+# ---- SOCKETIO ----
+
+@socketio.on('join')
+def on_join(data):
+    room = data['room']
+    join_room(room)
+
+@socketio.on('send_message')
+def handle_message(data):
+    sender = data['sender']
+    receiver = data['receiver']
+    message = data['message']
+
+    # save to DB
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    c.execute('INSERT INTO messages (sender, receiver, message) VALUES (?, ?, ?)',
+              (sender, receiver, message))
+    conn.commit()
+    conn.close()
+
+    room = f"room_{min(sender, receiver)}_{max(sender, receiver)}"
+    emit('new_message', f"{sender} : {message}", room=room)
+
+@socketio.on('typing')
+def on_typing(data):
+    sender = data['sender']
+    receiver = data['receiver']
+
+    room = f"room_{min(sender, receiver)}_{max(sender, receiver)}"
+
+    emit('typing_status', f"{sender} печатает…", room=room, include_self=False)
+
+# ---- RUN ----
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))   # Render даёт PORT автоматически
-    app.run(host='0.0.0.0', port=port)
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host='0.0.0.0', port=port)

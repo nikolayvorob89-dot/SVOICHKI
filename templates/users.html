@@ -3,14 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>Пользователи</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <h2>Выберите пользователя для чата</h2>
-    <p>Привет, {{ session['username'] }} | <a href="/logout">Выйти</a></p>
+
+<div class="sidebar">
+    <h3>{{ session['username'] }}</h3>
+    <a href="/logout">Выйти</a>
+</div>
+
+<div class="chat-window">
+    <h2>Пользователи</h2>
     <ul>
         {% for user in users %}
-        <li><a href="{{ url_for('chat_with', username=user) }}">{{ user }}</a></li>
+        <li>
+            <a href="{{ url_for('chat', username=user) }}">{{ user }}</a>
+        </li>
         {% endfor %}
     </ul>
+</div>
+
 </body>
 </html>
