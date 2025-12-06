@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Чат</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="sidebar">
+        <h3>Привет, {{ username }}</h3>
+        <p>Чат с {{ chat_with }}</p>
+        <a href="/users">Список пользователей</a> | <a href="/logout">Выйти</a>
+    </div>
+    <div class="chat-window"></div>
+    <div class="message-input">
+        <form style="display:flex; width:100%;">
+            <input type="text" name="message" placeholder="Написать сообщение..." style="flex:1;" autocomplete="off">
+            <button type="submit">Отправить</button>
+        </form>
+    </div>
+
+    <script>
+        const chatWith = "{{ chat_with }}";
+        const username = "{{ username }}";
+        const chatWindow = document.querySelector('.chat-window');
+        const form = document.querySelector('form');
+        const input = document.querySelector('input[name="message"]');
+
+        function loadMessages() {
+            fetch('/messages/' + chatWith)
+                .then(response => response.json())
+                .then(data => {
+                    chatWindow.innerHTML = '';
+                    data.forEach(text => {
+                        const div = document.createElement('div');
+                        div.innerText = text;
+                        div.className = text.startsWith(username + " :") ? 'message self' : 'message other';
+                        chatWindow.appendChild(div);
+                    });
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                });
+        }
+
+        form.addEventListener('submit', function(e){
+            e.preventDefault();
+            const message = input.value.trim();
+            if(!message) return;
+            fetch('/chat/' + chatWith, {
+                method: 'POST',
+                body: new URLSearchParams({message}),
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+            }).then(() => {
+                input.value = '';
+                loadMessages();
+            });
+        });
+
+        setInterval(loadMessages, 2000);
+        loadMessages();
+    </script>
+</body>
+</html>
