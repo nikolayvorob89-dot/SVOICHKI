@@ -159,5 +159,8 @@ def handle_typing(data):
 def get_room_name(user1, user2):
     return '_'.join(sorted([user1, user2]))
 
+# --- Исправленный запуск для Render ---
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host="0.0.0.0", port=port, debug=True)
